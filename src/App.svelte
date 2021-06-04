@@ -17,7 +17,7 @@
   let time = 0;
   let extruded = 0;
   let volume = 0;
-  const cur = { x: 0, y: 0, z: 0, e: 0, f:0 };
+  const cur = { x: 0, y: 0, z: 0, e: 0, f:1 };
   init();
 
   async function init() {
@@ -111,8 +111,8 @@
     const dx = next.x - cur.x;
     const dy = next.y - cur.y;
     const d = Math.sqrt(dx*dx + dy*dy);
-    const f = (cur.f + next.f) / 2; // feedrate
-    const fs = f * 60; // feedrate in seconds
+    const f = (cur.f + (next.f || cur.f)) / 2; // feedrate
+    const fs = f / 60; // feedrate in seconds
     const dt = d / (fs);
     const de = next.e * 0.95; // NOTE: based on M221 command found in gcode file
     
@@ -131,7 +131,7 @@
 
   <div id="gcode-preview"></div>
 
-  <div> total time:  {time}min</div>
+  <div> total time:  {time/60}min</div>
   <div> total extruded:  {Math.round(extruded)}mm</div>
   <!-- <div> total volume:  {Math.round(volume)}mm^3</div> -->
 	<ol>
