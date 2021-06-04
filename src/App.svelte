@@ -17,6 +17,8 @@
   let time = 0;
   let extruded = 0;
   let volume = 0;
+  let minFlow = 0;
+  let maxFlow = 0;
   const cur = { x: 0, y: 0, z: 0, e: 0, f:1 };
   init();
 
@@ -56,6 +58,9 @@
     time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
     extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
     volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
+
+    minFlow = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
+    maxFlow = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
   }
   
   // for now we only look at the feed rate
@@ -95,7 +100,7 @@
     }
 
     // mm/s
-    const flow = totalE / (totalT);
+    const flow = totalE / totalT;
     
     // mm^3/s
     const vol = flow * filamentCrossSection;
@@ -134,10 +139,15 @@
   <div> total time:  {time/60}min</div>
   <div> total extruded:  {Math.round(extruded)}mm</div>
   <div> total volume:  {Math.round(volume)}mm^3</div>
+  <div> minimum flow rate {minFlow.toFixed(2)} </div>
+  <div> maximum flow rate {maxFlow.toFixed(2)} </div>
 	<ol>
 	{#each layers as layer}
-		<li>{Math.round(layer.totalE)}mm {Math.round(layer.totalT)}s {Math.round(layer.flow)}mm/s 
+		<li>{Math.round(layer.totalE)}mm 
+      {Math.round(layer.totalT)}s 
+      {layer.flow.toFixed(2)}mm/s 
       {layer.vol.toFixed(3) }mm^3/s  
+      {(100 * layer.flow / maxFlow).toFixed(2) }%
       </li>
 	{/each}
 	</ol>
