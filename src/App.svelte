@@ -3,9 +3,9 @@
 	import * as GCodePreview from "gcode-preview";
 	export let name;
 
-  const nozzleDia = 0.4
-  const nozzleRadius = nozzleDia / 2;
-  const nozzleArea = nozzleRadius * nozzleRadius * Math.PI;
+  const filamentDia = 1.75;
+  const filamentRadius = filamentDia / 2;
+  const filamentCrossSection = filamentRadius * filamentRadius * Math.PI;
   
 	let files = {
 	  accepted: [],
@@ -55,7 +55,7 @@
 
     time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
     extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
-    volume = layers.reduce((prev, cur) => prev + cur.totalE*nozzleArea, 0);
+    volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
   }
   
   // for now we only look at the feed rate
@@ -98,7 +98,7 @@
     const flow = totalE / (totalT);
     
     // mm^3/s
-    const vol = flow * nozzleArea;
+    const vol = flow * filamentCrossSection;
     return {
       totalE,
       totalT,
@@ -133,11 +133,11 @@
 
   <div> total time:  {time/60}min</div>
   <div> total extruded:  {Math.round(extruded)}mm</div>
-  <!-- <div> total volume:  {Math.round(volume)}mm^3</div> -->
+  <div> total volume:  {Math.round(volume)}mm^3</div>
 	<ol>
 	{#each layers as layer}
-		<li>{Math.round(layer.totalE)}mm {Math.round(layer.totalT)}s {Math.round(layer.flow)}mm/min 
-      <!-- {layer.vol.toFixed(3) }mm^3/s   -->
+		<li>{Math.round(layer.totalE)}mm {Math.round(layer.totalT)}s {Math.round(layer.flow)}mm/s 
+      {layer.vol.toFixed(3) }mm^3/s  
       </li>
 	{/each}
 	</ol>
