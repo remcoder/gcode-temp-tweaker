@@ -3,48 +3,71 @@
 	import * as GCodePreview from "gcode-preview";
 	export let name;
 
+  const nozzleDia = 0.4
+  const nozzleRadius = nozzleDia / 2;
+  const nozzleArea = nozzleRadius * nozzleRadius * Math.PI;
   
 	let files = {
 	  accepted: [],
 	  rejected: []
 	};
 
+  // analysis output
   let layers = [];
-  
+  let time = 0;
+  let extruded = 0;
+  let volume = 0;
+  const cur = { x: 0, y: 0, z: 0, e: 0, f:0 };
+  init();
+
+  async function init() {
+    const response = await fetch('double-cylinder.gcode');
+
+    if (response.status !== 200) {
+      console.error('ERROR. Status Code: ' + response.status);
+      return;
+    }
+
+    const gcode = await response.text();
+    handleGCode(gcode);
+  }
+
 	async function handleFilesSelect(e) {
 	  const { acceptedFiles, fileRejections } = e.detail;
 	  files.accepted = [...files.accepted, ...acceptedFiles];
 	  files.rejected = [...files.rejected, ...fileRejections];
 
-	  // const gcode = 'G0 X0 Y0 Z0.2\nG1 X42 Y42'; // draw a diagonal line
-	  const preview = new GCodePreview.WebGLPreview({
-			targetId: 'gcode-preview',
-		});
-		
     const file = files.accepted[0];
     const gcode = await file.text();
+    
+    handleGCode(gcode);
+	}
+
+  function handleGCode(gcode) {
+    const preview = new GCodePreview.WebGLPreview({
+			targetId: 'gcode-preview',
+		});
+    
 		preview.processGCode(gcode);
 		//preview.render();
     window.preview = preview;
-    analyseFlow(preview);
-	}
+    layers = analyseFlow(preview);
 
-  const cur = { x: 0, y: 0, z: 0, e: 0, f:0 };
-
+    time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
+    extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
+    volume = layers.reduce((prev, cur) => prev + cur.totalE*nozzleArea, 0);
+  }
+  
   // for now we only look at the feed rate
   function analyseFlow(preview) {
     console.log(preview.layers);
-    for (const layer of preview.layers) {
-      const res = analyzeLayer(layer.commands)
-      layers.push(res);
-    }
-    layers = layers;
+
+    return preview.layers.map( l => analyzeLayer(l.commands) );
   }
+
   function analyzeLayer(commands) {
     console.log(commands);
     let totalE = 0, totalT = 0;
-
-    
 
     for (const cmd of commands) {
       const g = cmd;
@@ -71,12 +94,16 @@
       if (g.params.f) cur.f = g.params.f;
     }
 
-    const flow = totalE / totalT;
-
+    // mm/s
+    const flow = totalE / (totalT);
+    
+    // mm^3/s
+    const vol = flow * nozzleArea;
     return {
       totalE,
       totalT,
-      flow
+      flow,
+      vol
     };
   }
 
@@ -85,8 +112,9 @@
     const dy = next.y - cur.y;
     const d = Math.sqrt(dx*dx + dy*dy);
     const f = (cur.f + next.f) / 2; // feedrate
-    const dt = d / f;
-    const de = next.e;
+    const fs = f * 60; // feedrate in seconds
+    const dt = d / (fs);
+    const de = next.e * 0.95; // NOTE: based on M221 command found in gcode file
     
     return {
       dt,
@@ -94,42 +122,6 @@
     }
   }
 
-  // we should only have move commands, being g0 or g1
-  // function analyzeCommands(commands) {
-  //   // for now assume: absolute positioning for X/Y, relative distances for extrusion
-  //   let totalX = 0, totalY = 0, totalE = 0;
-  //   let prevX = 0;
-  //   let prevCmd;
-  //   let totalF = 0, countF = 0;
-  //   let curF = 0;
-  //   for (const cmd of commands) {
-      
-  //     if ('e' in cmd.params) {
-  //       totalE += cmd.params.e;
-  //     }
-  //     // if (prevCmd) {
-  //     //   totalX += cmd.x - prevCmd.x;
-  //     //   totalY += cmd.y - prevCmd.y;
-  //     //}
-
-  //     // prevCmd = cmd;
-
-  //     if ('f' in cmd.params) {
-  //       totalF += cmd.params.f;
-  //       countF++;
-  //     }
-
-
-  //   }
-
-  //   const avgF = totalF / countF;
-
-  //   console.log('total', totalX, totalY, totalE, avgF);
-  //   return {
-  //     totalE,
-  //     avgF
-  //   };
-  // }
 </script>	
 
 <main>
@@ -139,9 +131,14 @@
 
   <div id="gcode-preview"></div>
 
+  <div> total time:  {time}min</div>
+  <div> total extruded:  {Math.round(extruded)}mm</div>
+  <!-- <div> total volume:  {Math.round(volume)}mm^3</div> -->
 	<ol>
 	{#each layers as layer}
-		<li>{Math.round(layer.totalE)}mm {Math.round(layer.totalT*60)}s {Math.round(layer.flow)}mm/min  </li>
+		<li>{Math.round(layer.totalE)}mm {Math.round(layer.totalT)}s {Math.round(layer.flow)}mm/min 
+      <!-- {layer.vol.toFixed(3) }mm^3/s   -->
+      </li>
 	{/each}
 	</ol>
 </main>
