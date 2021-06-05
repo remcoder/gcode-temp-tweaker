@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "file-saver": "^2.0.5",
-    "gcode-preview": "file:../gcode-preview",
+    "gcode-preview": "2.3.0-experimental",
     "sirv-cli": "^1.0.0",
     "svelte-file-dropzone": "0.0.15"
   }
