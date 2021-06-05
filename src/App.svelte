@@ -1,6 +1,7 @@
 <script>
 	import Dropzone from "svelte-file-dropzone";
 	import * as GCodePreview from "gcode-preview";
+  
 	export let name;
 
   const filamentDia = 1.75;
@@ -11,9 +12,11 @@
 	  accepted: [],
 	  rejected: []
 	};
+  
+  // gcode processor state
+  const cur = { x: 0, y: 0, z: 0, e: 0, f:1 };
 
-  // analysis output
-  let layers = [];
+  // analysis output, reactive
   let time = 0;
   let extruded = 0;
   let volume = 0;
@@ -21,9 +24,22 @@
   let maxFlow = 0;
   let minTemp = 200;
   let maxTemp = 230;
-  let flowVsTemp = [];
-  const cur = { x: 0, y: 0, z: 0, e: 0, f:1 };
-  init();
+  let tempInc = 1;
+  // let flowVsTemp = [];
+  let gcodePreview;
+  let tempChanges = [];
+  let analyzedLayers = [];
+
+  $: analyzedLayers  = analyzeGCode(gcodePreview);
+  $: ({
+      time,
+      extruded,
+      volume,
+      minFlow,
+      maxFlow } = aggregateLayerStats(analyzedLayers));
+  $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp);
+
+  init().then((preview)=> gcodePreview = window.__preview__ = preview );
 
   async function init() {
     const response = await fetch('double-cylinder.gcode');
@@ -34,7 +50,7 @@
     }
 
     const gcode = await response.text();
-    handleGCode(gcode);
+    return handleGCode(gcode);
   }
 
 	async function handleFilesSelect(e) {
@@ -55,19 +71,17 @@
     
 		preview.processGCode(gcode);
 		//preview.render();
-    window.preview = preview;
-    layers = analyseFlow(preview);
-    analyse2(layers);
+    return preview;
   }
   
   // for now we only look at the feed rate
-  function analyseFlow(preview) {
+  function analyzeGCode(preview) {
+    console.debug('analyze gcode');
     // console.log(preview.layers);
-
-    const result = preview.layers.map( l => analyzeLayer(l.commands) );
-
-    // result.each(l=> l.percentageFlow = 100 * layer.flow / maxFlow );
-    return result;
+    if (!preview)
+      return [];
+    
+    return preview.layers.map( l => analyzeLayer(l.commands) );
   }
 
   function analyzeLayer(commands) {
@@ -75,6 +89,11 @@
     let totalE = 0, totalT = 0;
 
     for (const cmd of commands) {
+
+      if ( cmd.gcode != 'g0' && cmd.gcode != 'g1' ) {
+        continue;
+        console.log(cmd.src);
+      }
 
       const next = {
         x: cmd.params.x !== undefined ? cmd.params.x : cur.x,
@@ -127,7 +146,8 @@
     }
   }
 
-  function analyse2() {
+  function aggregateLayerStats(layers) {
+    console.debug('aggregateLayerStats');
     time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
     extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
     volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
@@ -135,17 +155,48 @@
     minFlow = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
     maxFlow = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
 
-    flowVsTemp = layers.map(l=> { return { 
-      percentageFlow : 100 * l.flow / maxFlow ,
-      temp: interpolateTemp(l.flow)
-    }});
+    return {
+      time,
+      extruded,
+      volume,
+      minFlow,
+      maxFlow
+    };
   }
 
-  function interpolateTemp(flow) {
+  function generateTempChanges(layers, minFlow, maxFlow, minTemp, maxTemp) {
+    console.debug('generateTempChanges');
+    // NOTE: assumption: first layer == slowest == minTemp
+    const changes = [];
+    let prevTemp = minTemp;
+
+    for (let i = 0; i < layers.length; i++) {
+      const layer = layers[i];
+      const desiredTemp = roundTo(interpolateTemp(layer.flow, minFlow, maxFlow, minTemp, maxTemp), tempInc);
+      
+      if (desiredTemp != prevTemp) {
+        changes.push({
+          layer: i,
+          temp: desiredTemp
+        });
+      }
+
+      prevTemp = desiredTemp;
+    }
+
+    return changes;
+  }
+
+  // linear transformation
+  function interpolateTemp(flow, minFlow, maxFlow, minTemp, maxTemp) {
     const dFlow = maxFlow - minFlow;
     const dTemp = maxTemp - minTemp;
 
     return minTemp + dTemp * ((flow - minFlow) / dFlow);
+  }
+
+  function roundTo(n, p) {
+    return p * Math.floor(n / p);
   }
 
 </script>	
@@ -167,7 +218,7 @@
     <div> maximum flow rate {maxFlow.toFixed(2)} </div>
 
     <ol>
-      {#each layers as layer}
+      {#each analyzedLayers as layer}
         <li>{Math.round(layer.totalE)}mm 
           {Math.round(layer.totalT)}s 
           {layer.flow.toFixed(2)}mm/s 
@@ -189,16 +240,20 @@
         <label for="maxTemp">max temp</label><input type="number" name="maxTemp" bind:value={maxTemp} />
       </div>
     </div>
+    <label for="tempInc">temp inc</label><input type="number" name="tempInc" bind:value={tempInc} />
 
-    <ol>
+    <!-- <ol>
       {#each flowVsTemp as item}
         <li>
           {item.percentageFlow.toFixed(0)}%
           {item.temp.toFixed(0)}C
         </li>
       {/each}
-    </ol>
- 
+    </ol> -->
+    <h3>Temp changes</h3>
+    {#each tempChanges as change}
+      <div>#{change.layer} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
+    {/each}
   </section>
 </div>
 </main>
@@ -229,6 +284,10 @@
   .column-wrapper {
     display: flex;
     justify-content: space-around;
+  }
+
+  pre {
+    display: inline-block;
   }
 
 	@media (min-width: 640px) {
