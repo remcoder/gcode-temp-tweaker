@@ -1,7 +1,8 @@
 <script>
 	import Dropzone from "svelte-file-dropzone";
 	import * as GCodePreview from "gcode-preview";
-  
+  import * as FileSaver from 'file-saver';
+
 	export let name;
 
   const filamentDia = 1.75;
@@ -81,14 +82,14 @@
     if (!preview)
       return [];
     
-    return preview.layers.map( l => analyzeLayer(l.commands) );
+    return preview.layers.map( l => analyzeLayer(l) );
   }
 
-  function analyzeLayer(commands) {
+  function analyzeLayer(layer) {
     // console.log(commands);
     let totalE = 0, totalT = 0;
 
-    for (const cmd of commands) {
+    for (const cmd of layer.commands) {
 
       if ( cmd.gcode != 'g0' && cmd.gcode != 'g1' ) {
         continue;
@@ -123,6 +124,7 @@
     // mm^3/s
     const vol = flow * filamentCrossSection;
     return {
+      lineNumber: layer.lineNumber,
       totalE,
       totalT,
       flow,
@@ -177,6 +179,7 @@
       if (desiredTemp != prevTemp) {
         changes.push({
           layer: i,
+          lineNumber: layer.lineNumber,
           temp: desiredTemp
         });
       }
@@ -197,6 +200,19 @@
 
   function roundTo(n, p) {
     return p * Math.floor(n / p);
+  }
+
+  function saveTargetFile() {
+    const lines = gcodePreview.parser.lines.slice();
+    
+    tempChanges.reverse();
+    tempChanges.forEach(ch=> lines.splice(ch.lineNumber,0, `M104 S${ch.temp} ; injected by GCode Temp Tweaker` ) );
+    tempChanges.reverse();
+
+    const gcode = lines.join('\n');
+
+    var blob = new Blob([gcode], {type: "text/plain;charset=utf-8"});
+    FileSaver.saveAs(blob, "hello world.gcode");
   }
 
 </script>	
@@ -242,17 +258,10 @@
     </div>
     <label for="tempInc">temp inc</label><input type="number" name="tempInc" bind:value={tempInc} />
 
-    <!-- <ol>
-      {#each flowVsTemp as item}
-        <li>
-          {item.percentageFlow.toFixed(0)}%
-          {item.temp.toFixed(0)}C
-        </li>
-      {/each}
-    </ol> -->
     <h3>Temp changes</h3>
+    <button on:click={saveTargetFile}>save file</button>
     {#each tempChanges as change}
-      <div>#{change.layer} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
+      <div>#{change.layer} {change.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
     {/each}
   </section>
 </div>
