@@ -75,14 +75,13 @@
     let totalE = 0, totalT = 0;
 
     for (const cmd of commands) {
-      const g = cmd;
 
       const next = {
-        x: g.params.x !== undefined ? g.params.x : cur.x,
-        y: g.params.y !== undefined ? g.params.y : cur.y,
-        z: g.params.z !== undefined ? g.params.z : cur.z,
-        e: g.params.e !== undefined ? g.params.e : cur.e,
-        f: g.params.f !== undefined ? g.params.f : cur.f,
+        x: cmd.params.x !== undefined ? cmd.params.x : cur.x,
+        y: cmd.params.y !== undefined ? cmd.params.y : cur.y,
+        z: cmd.params.z !== undefined ? cmd.params.z : cur.z,
+        e: cmd.params.e !== undefined ? cmd.params.e : cur.e,
+        f: cmd.params.f !== undefined ? cmd.params.f : cur.f,
       };
       
       const {dt, de } = doMove(cur, next);
@@ -92,11 +91,11 @@
         totalT += dt;
 
       // update cur
-      if (g.params.x) cur.x = g.params.x;
-      if (g.params.y) cur.y = g.params.y;
-      if (g.params.z) cur.z = g.params.z;
-      if (g.params.e) cur.e = g.params.e;
-      if (g.params.f) cur.f = g.params.f;
+      if (cmd.params.x) cur.x = cmd.params.x;
+      if (cmd.params.y) cur.y = cmd.params.y;
+      if (cmd.params.z) cur.z = cmd.params.z;
+      if (cmd.params.e) cur.e = cmd.params.e;
+      if (cmd.params.f) cur.f = cmd.params.f;
     }
 
     // mm/s
@@ -116,10 +115,11 @@
     const dx = next.x - cur.x;
     const dy = next.y - cur.y;
     const d = Math.sqrt(dx*dx + dy*dy);
+    // TODO: remove ||
     const f = (cur.f + (next.f || cur.f)) / 2; // feedrate
     const fs = f / 60; // feedrate in seconds
-    const dt = d / (fs);
-    const de = next.e * 0.95; // NOTE: based on M221 command found in gcode file
+    const dt = d / fs; // fs = d / t
+    const de = next.e; // * 0.95; // NOTE: based on M221 command for MINI ONLY
     
     return {
       dt,
@@ -172,10 +172,8 @@
           {Math.round(layer.totalT)}s 
           {layer.flow.toFixed(2)}mm/s 
           {layer.vol.toFixed(3) }mm^3/s  
-          <!-- {layer.percentageFlow.toFixed(2) }% -->
-          <!-- {interpolateTemp(layer.flow).toFixed(0) }C -->
         </li>
-      {/each}
+      {/each} 
     </ol>
   </section>
   <section>
