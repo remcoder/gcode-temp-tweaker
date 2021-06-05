@@ -21,6 +21,7 @@
   let maxFlow = 0;
   let minTemp = 200;
   let maxTemp = 230;
+  let flowVsTemp = [];
   const cur = { x: 0, y: 0, z: 0, e: 0, f:1 };
   init();
 
@@ -56,20 +57,17 @@
 		//preview.render();
     window.preview = preview;
     layers = analyseFlow(preview);
-
-    time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
-    extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
-    volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
-
-    minFlow = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
-    maxFlow = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
+    analyse2(layers);
   }
   
   // for now we only look at the feed rate
   function analyseFlow(preview) {
     // console.log(preview.layers);
 
-    return preview.layers.map( l => analyzeLayer(l.commands) );
+    const result = preview.layers.map( l => analyzeLayer(l.commands) );
+
+    // result.each(l=> l.percentageFlow = 100 * layer.flow / maxFlow );
+    return result;
   }
 
   function analyzeLayer(commands) {
@@ -129,6 +127,27 @@
     }
   }
 
+  function analyse2() {
+    time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
+    extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
+    volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
+
+    minFlow = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
+    maxFlow = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
+
+    flowVsTemp = layers.map(l=> { return { 
+      percentageFlow : 100 * l.flow / maxFlow ,
+      temp: interpolateTemp(l.flow)
+    }});
+  }
+
+  function interpolateTemp(flow) {
+    const dFlow = maxFlow - minFlow;
+    const dTemp = maxTemp - minTemp;
+
+    return minTemp + dTemp * ((flow - minFlow) / dFlow);
+  }
+
 </script>	
 
 <main>
@@ -146,15 +165,17 @@
     <div> total volume:  {Math.round(volume)}mm^3</div>
     <div> minimum flow rate {minFlow.toFixed(2)} </div>
     <div> maximum flow rate {maxFlow.toFixed(2)} </div>
+
     <ol>
-    {#each layers as layer}
-      <li>{Math.round(layer.totalE)}mm 
-        {Math.round(layer.totalT)}s 
-        {layer.flow.toFixed(2)}mm/s 
-        {layer.vol.toFixed(3) }mm^3/s  
-        {(100 * layer.flow / maxFlow).toFixed(2) }%
+      {#each layers as layer}
+        <li>{Math.round(layer.totalE)}mm 
+          {Math.round(layer.totalT)}s 
+          {layer.flow.toFixed(2)}mm/s 
+          {layer.vol.toFixed(3) }mm^3/s  
+          <!-- {layer.percentageFlow.toFixed(2) }% -->
+          <!-- {interpolateTemp(layer.flow).toFixed(0) }C -->
         </li>
-    {/each}
+      {/each}
     </ol>
   </section>
   <section>
@@ -170,6 +191,16 @@
         <label for="maxTemp">max temp</label><input type="number" name="maxTemp" bind:value={maxTemp} />
       </div>
     </div>
+
+    <ol>
+      {#each flowVsTemp as item}
+        <li>
+          {item.percentageFlow.toFixed(0)}%
+          {item.temp.toFixed(0)}C
+        </li>
+      {/each}
+    </ol>
+ 
   </section>
 </div>
 </main>
