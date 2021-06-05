@@ -40,7 +40,7 @@
       maxFlow } = aggregateLayerStats(analyzedLayers));
   $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc);
 
-  init().then((preview)=> gcodePreview = window.__preview__ = preview );
+  //init()
 
   async function init() {
     const response = await fetch('double-cylinder.gcode');
@@ -71,7 +71,7 @@
 		});
     
 		preview.processGCode(gcode);
-		//preview.render();
+    gcodePreview = window.__preview__ = preview;
     return preview;
   }
   
