@@ -37,7 +37,7 @@
       volume,
       minFlow,
       maxFlow } = aggregateLayerStats(analyzedLayers));
-  $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp);
+  $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc);
 
   init().then((preview)=> gcodePreview = window.__preview__ = preview );
 
@@ -164,7 +164,7 @@
     };
   }
 
-  function generateTempChanges(layers, minFlow, maxFlow, minTemp, maxTemp) {
+  function generateTempChanges(layers, minFlow, maxFlow, minTemp, maxTemp, tempInc) {
     console.debug('generateTempChanges');
     // NOTE: assumption: first layer == slowest == minTemp
     const changes = [];
