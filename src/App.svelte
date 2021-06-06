@@ -15,7 +15,7 @@
 	};
   
   // gcode processor state
-  const cur = { x: 0, y: 0, z: 0, e: 0, f:1 };
+  const cur = { x: 0, y: 0, z: 0, e: 0, f:1, relativeE: false };
 
   // analysis output, reactive
   let time = 0;
@@ -82,35 +82,59 @@
     if (!preview)
       return [];
     
-    return preview.layers.map( l => analyzeLayer(l) );
+    return [preview.parser.preamble, ...preview.layers].map( l => analyzeLayer(l) );
   }
 
   function analyzeLayer(layer) {
-    // console.log(commands);
     let totalE = 0, totalT = 0;
 
     for (const cmd of layer.commands) {
+      if (cmd.gcode == 'm83') { // E Relative
+        cur.relativeE = true;
+        console.log('relativeE', cur.relativeE);
+        continue;
+      }
+
+      if (cmd.gcode == 'm82') { // E Absolute
+        cur.relativeE = false;
+        console.log('relativeE', cur.relativeE);
+        continue;
+      }
+
+      if (cmd.gcode == 'g92') { // Set Position
+        if ('x' in cmd.params) cur.x = cmd.params.x;
+        if ('y' in cmd.params) cur.y = cmd.params.y;
+        if ('z' in cmd.params) cur.z = cmd.params.z;
+        if ('e' in cmd.params) cur.e = cmd.params.e;
+        continue;
+      }
 
       if ( cmd.gcode != 'g0' && cmd.gcode != 'g1' ) {
         continue;
-        console.log(cmd.src);
       }
 
       const next = {
-        x: cmd.params.x !== undefined ? cmd.params.x : cur.x,
-        y: cmd.params.y !== undefined ? cmd.params.y : cur.y,
-        z: cmd.params.z !== undefined ? cmd.params.z : cur.z,
-        e: cmd.params.e !== undefined ? cmd.params.e : cur.e,
-        f: cmd.params.f !== undefined ? cmd.params.f : cur.f,
+        x: 'x' in cmd.params ? cmd.params.x : cur.x,
+        y: 'y' in cmd.params ? cmd.params.y : cur.y,
+        z: 'z' in cmd.params ? cmd.params.z : cur.z,
+        e: 'e' in cmd.params ? cmd.params.e : cur.e,
+        f: 'f' in cmd.params ? cmd.params.f : cur.f,
       };
       
-      const {dt, de } = doMove(cur, next);
+      // do move
+      const dx = next.x - cur.x;
+      const dy = next.y - cur.y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const f = (cur.f + next.f) / 2; // averaging feedrate. don't know why
+      const fs = f / 60; // feedrate in seconds
+      const dt = d / fs; // fs = d / t
+      const de = cur.relativeE ? next.e : next.e - cur.e; // * 0.95; // NOTE: based on M221 command for MINI ONLY
       totalE += de;
-      
       if (!isNaN(dt))
         totalT += dt;
 
-      // update cur
+      // update cur 
+      // FIXME: should be: cur = next (or similar)
       if (cmd.params.x) cur.x = cmd.params.x;
       if (cmd.params.y) cur.y = cmd.params.y;
       if (cmd.params.z) cur.z = cmd.params.z;
@@ -130,22 +154,6 @@
       flow,
       vol
     };
-  }
-
-  function doMove(cur, next) {
-    const dx = next.x - cur.x;
-    const dy = next.y - cur.y;
-    const d = Math.sqrt(dx*dx + dy*dy);
-    // TODO: remove ||
-    const f = (cur.f + (next.f || cur.f)) / 2; // feedrate
-    const fs = f / 60; // feedrate in seconds
-    const dt = d / fs; // fs = d / t
-    const de = next.e; // * 0.95; // NOTE: based on M221 command for MINI ONLY
-    
-    return {
-      dt,
-      de
-    }
   }
 
   function aggregateLayerStats(layers) {
