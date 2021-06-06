@@ -235,7 +235,9 @@
 
     <ol>
       {#each analyzedLayers as layer}
-        <li>{Math.round(layer.totalE)}mm 
+        <li>
+          #{layer.lineNumber}
+          {Math.round(layer.totalE)}mm 
           {Math.round(layer.totalT)}s 
           {layer.flow.toFixed(2)}mm/s 
           {layer.vol.toFixed(3) }mm^3/s  
