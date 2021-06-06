@@ -235,7 +235,7 @@
 
     <div id="gcode-preview"></div>
 
-    <div> total time:  {time/60}min</div>
+    <div> total time:  {Math.round(time/60)}min</div>
     <div> total extruded:  {Math.round(extruded)}mm</div>
     <div> total volume:  {Math.round(volume)}mm^3</div>
     <div> minimum flow rate {minFlow.toFixed(2)} </div>
