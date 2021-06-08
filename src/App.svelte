@@ -5,9 +5,8 @@
 
 	export let name;
 
-  const filamentDia = 1.75;
-  const filamentRadius = filamentDia / 2;
-  const filamentCrossSection = filamentRadius * filamentRadius * Math.PI;
+  let filamentDia = 1.75;
+  let filamentRadius, filamentCrossSection;
   
 	let files = {
 	  accepted: [],
@@ -31,7 +30,7 @@
   let tempChanges = [];
   let analyzedLayers = [];
 
-  $: analyzedLayers  = analyzeGCode(gcodePreview);
+  $: analyzedLayers  = analyzeGCode(gcodePreview, filamentDia);
   $: ({
       time,
       extruded,
@@ -76,12 +75,15 @@
   }
   
   // for now we only look at the feed rate
-  function analyzeGCode(preview) {
-    console.debug('analyze gcode');
+  function analyzeGCode(preview, filamentDia  ) {
+    console.debug('analyze gcode' , filamentDia);
     // console.log(preview.layers);
     if (!preview)
       return [];
     
+    filamentRadius = filamentDia / 2;
+    filamentCrossSection = filamentRadius * filamentRadius * Math.PI;
+
     const mappedLayer = [preview.parser.preamble, ...preview.layers]
       .map( l => analyzeLayer(l) );
     return mappedLayer.slice(1);
@@ -160,6 +162,7 @@
 
   function aggregateLayerStats(layers) {
     console.debug('aggregateLayerStats');
+
     time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
     extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
     volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
@@ -236,7 +239,12 @@
     <Dropzone on:drop={handleFilesSelect} />
 
     <div id="gcode-preview"></div>
-
+    <div>filament diameter <select bind:value={filamentDia}> 
+        <option value="1.75">1.75mm</option>
+        <option value="2.85">2.85mm</option>
+      </select>
+      {filamentDia}
+    </div>
     <div> total time:  {Math.round(time/60)}min</div>
     <div> total extruded:  {Math.round(extruded)}mm</div>
     <div> total volume:  {Math.round(volume)}mm^3</div>
