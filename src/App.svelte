@@ -82,7 +82,9 @@
     if (!preview)
       return [];
     
-    return [preview.parser.preamble, ...preview.layers].map( l => analyzeLayer(l) );
+    const mappedLayer = [preview.parser.preamble, ...preview.layers]
+      .map( l => analyzeLayer(l) );
+    return mappedLayer.slice(1);
   }
 
   function analyzeLayer(layer) {
@@ -94,7 +96,7 @@
         console.log('relativeE', cur.relativeE);
         continue;
       }
-
+      
       if (cmd.gcode == 'm82') { // E Absolute
         cur.relativeE = false;
         console.log('relativeE', cur.relativeE);
@@ -186,7 +188,7 @@
       
       if (desiredTemp != prevTemp) {
         changes.push({
-          layer: i,
+          layer: i+1,
           lineNumber: layer.lineNumber,
           temp: desiredTemp
         });
@@ -271,7 +273,7 @@
     <h3>Temp changes</h3>
     <button on:click={saveTargetFile}>save file</button>
     {#each tempChanges as change}
-      <div>#{change.layer} {change.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
+      <div>{change.layer} #{change.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
     {/each}
   </section>
 </div>
