@@ -127,7 +127,7 @@
       const dx = next.x - cur.x;
       const dy = next.y - cur.y;
       const d = Math.sqrt(dx*dx + dy*dy);
-      const f = (cur.f + next.f) / 2; // averaging feedrate. don't know why
+      const f = next.f;
       const fs = f / 60; // feedrate in seconds
       const dt = d / fs; // fs = d / t
       const de = cur.relativeE ? next.e : next.e - cur.e; // * 0.95; // NOTE: based on M221 command for MINI ONLY
