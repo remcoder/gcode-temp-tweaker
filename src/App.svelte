@@ -95,7 +95,10 @@
   }
 
   function analyzeLayer(layer) {
-    let totalE = 0, totalT = 0;
+    let totalE = 0, 
+    totalT = 0, 
+    firstExtrusionDone = false,
+    z;
 
     for (const cmd of layer.commands) {
       if (cmd.gcode == 'm83') { // E Relative
@@ -138,6 +141,11 @@
       const fs = f / 60; // feedrate in seconds
       const dt = d / fs; // fs = d / t
       const de = cur.relativeE ? next.e : next.e - cur.e; // * 0.95; // NOTE: based on M221 command for MINI ONLY
+      
+      if (!firstExtrusionDone && de > 0) { // ignores (de)retractions
+        z = next.z; // assume abs pos
+        firstExtrusionDone = true;
+      }
       totalE += de;
       if (!isNaN(dt))
         totalT += dt;
@@ -151,12 +159,14 @@
       if (cmd.params.f) cur.f = cmd.params.f;
     }
 
+
     // mm/s
     const flow = totalE / totalT;
     
     // mm^3/s
     const vol = flow * filamentCrossSection;
     return {
+      z,
       lineNumber: layer.lineNumber,
       totalE,
       totalT,
@@ -196,8 +206,8 @@
       
       if (desiredTemp != prevTemp) {
         changes.push({
-          layer: i+1,
-          lineNumber: layer.lineNumber,
+          layerNumber: i+1,
+          layer,
           temp: desiredTemp
         });
       }
@@ -224,7 +234,7 @@
     const lines = gcodePreview.parser.lines.slice();
     
     tempChanges.reverse();
-    tempChanges.forEach(ch=> lines.splice(ch.lineNumber,0, `M104 S${ch.temp} ; injected by GCode Temp Tweaker` ) );
+    tempChanges.forEach(ch=> lines.splice(ch.layer.lineNumber,0, `M104 S${ch.temp} ; injected by GCode Temp Tweaker` ) );
     tempChanges.reverse();
 
     const gcode = lines.join('\n');
@@ -268,6 +278,7 @@
     <ol>
       {#each analyzedLayers as layer}
         <li>
+          z={layer.z}
           #{layer.lineNumber}
           {Math.round(layer.totalE)}mm 
           {Math.round(layer.totalT)}s 
@@ -297,7 +308,7 @@
     <h3>Temp changes ({tempChanges.length})</h3>
     <button on:click={saveTargetFile}>save file</button>
     {#each tempChanges as change}
-      <div>{change.layer} #{change.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
+      <div> {change.layerNumber} z={change.layer.z} #{change.layer.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
     {/each}
   </section>
 </div>
@@ -338,9 +349,6 @@
     display: inline-block;
   }
 
-  .dropzone {
-    color:white;
-  }
 	@media (min-width: 640px) {
 		main {
 			max-width: none;
