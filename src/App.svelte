@@ -5,6 +5,7 @@
 
 	export let name;
 
+  let file = {};
   let showDropZone = true;
   let canvasElement;
   let filamentDia = 1.75;
@@ -60,7 +61,7 @@
 	  files.accepted = [...files.accepted, ...acceptedFiles];
 	  files.rejected = [...files.rejected, ...fileRejections];
 
-    const file = files.accepted[0];
+    file = files.accepted[0];
     const gcode = await file.text();
     
     handleGCode(gcode);
@@ -251,6 +252,7 @@
     {/if}
 
     <canvas bind:this={canvasElement}></canvas>
+    <div>{file.name}</div>
     <div>filament diameter <select bind:value={filamentDia}> 
         <option value="1.75">1.75mm</option>
         <option value="2.85">2.85mm</option>
