@@ -5,6 +5,8 @@
 
 	export let name;
 
+  let showDropZone = true;
+  let canvasElement;
   let filamentDia = 1.75;
   let filamentRadius, filamentCrossSection;
   
@@ -62,12 +64,14 @@
     const gcode = await file.text();
     
     handleGCode(gcode);
+    showDropZone = false;
 	}
 
   function handleGCode(gcode) {
     const preview = new GCodePreview.WebGLPreview({
-			targetId: 'gcode-preview',
+			canvas: canvasElement 
 		});
+    // preview.renderTravel = true;
     
 		preview.processGCode(gcode);
     gcodePreview = window.__preview__ = preview;
@@ -235,21 +239,29 @@
 	
   <div class="wrapper">
   <section> 
-    <h2>Source</h2>
-    <Dropzone on:drop={handleFilesSelect} />
+    <h2>Preview</h2>
+    {#if showDropZone}
+      <Dropzone   on:drop={handleFilesSelect}>
+        <button>Choose images to upload</button>
 
-    <div id="gcode-preview"></div>
+        <p>or</p>
+        <p>Drag and drop them here</p>
+      </Dropzone>
+
+    {/if}
+
+    <canvas bind:this={canvasElement}></canvas>
     <div>filament diameter <select bind:value={filamentDia}> 
         <option value="1.75">1.75mm</option>
         <option value="2.85">2.85mm</option>
       </select>
-      {filamentDia}
     </div>
     <div> total time:  {Math.round(time/60)}min</div>
     <div> total extruded:  {Math.round(extruded)}mm</div>
     <div> total volume:  {Math.round(volume)}mm^3</div>
     <div> minimum flow rate {minFlow.toFixed(2)} </div>
     <div> maximum flow rate {maxFlow.toFixed(2)} </div>
+    <div> # of layers {analyzedLayers.length} </div>
 
     <ol>
       {#each analyzedLayers as layer}
@@ -264,19 +276,21 @@
     </ol>
   </section>
   <section>
-    <h2>target</h2>
+    <h2>Target flow & temps</h2>
     <div class="column-wrapper">
       <div class="column">
-        <label for="minFlow">min flow</label><input type="number" name="minFlow" value={minFlow.toFixed(2)} step="0.01" />
-        <label for="maxFlow">max flow</label><input type="number" name="maxFlow" value={maxFlow.toFixed(2)} step="0.01" />
+        <label for="minFlow">min flow</label>
+        <output>{minFlow.toFixed(2)}</output>
+        <label for="minTemp">min temp</label><input type="number" name="minTemp" bind:value={minTemp} />
       </div>
 
       <div class="column">
-        <label for="minTemp">min temp</label><input type="number" name="minTemp" bind:value={minTemp} />
+        <label for="maxFlow">max flow</label>
+        <output>{maxFlow.toFixed(2)}</output>
         <label for="maxTemp">max temp</label><input type="number" name="maxTemp" bind:value={maxTemp} />
       </div>
     </div>
-    <label for="tempInc">temp inc</label><input type="number" name="tempInc" bind:value={tempInc} />
+    <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} />
 
     <h3>Temp changes</h3>
     <button on:click={saveTargetFile}>save file</button>
@@ -296,14 +310,17 @@
 	}
 
 	h1 {
-		color: #ff3e00;
+		color: #ff5900;
 		text-transform: uppercase;
 		font-size: 4em;
-		font-weight: 100;
+		font-weight: 200;
 	}
 
   .wrapper {
     display: flex;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    font-size: 110%;;
   }
 
   .wrapper section {
@@ -319,9 +336,20 @@
     display: inline-block;
   }
 
+  .dropzone {
+    color:white;
+  }
 	@media (min-width: 640px) {
 		main {
 			max-width: none;
 		}
 	}
+
+  input[type=number] {
+    width: 100px;
+  }
+
+  output {
+    color: #ff5900;
+  }
 </style>
