@@ -294,7 +294,7 @@
     </div>
     <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} />
 
-    <h3>Temp changes</h3>
+    <h3>Temp changes ({tempChanges.length})</h3>
     <button on:click={saveTargetFile}>save file</button>
     {#each tempChanges as change}
       <div>{change.layer} #{change.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
