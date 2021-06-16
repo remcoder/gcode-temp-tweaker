@@ -21,6 +21,8 @@
   let time = 0;
   let extruded = 0;
   let volume = 0;
+  let minExtrusionSpeed = 0;
+  let maxExtrusionSpeed = 0;
   let minFlow = 0;
   let maxFlow = 0;
   let minTemp = 200;
@@ -180,13 +182,17 @@
     extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
     volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
 
-    minFlow = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
-    maxFlow = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
+    minExtrusionSpeed = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
+    maxExtrusionSpeed = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
 
+    minFlow = minExtrusionSpeed * filamentCrossSection;
+    maxFlow = maxExtrusionSpeed * filamentCrossSection;
     return {
       time,
       extruded,
       volume,
+      minExtrusionSpeed,
+      maxExtrusionSpeed,
       minFlow,
       maxFlow
     };
@@ -268,12 +274,14 @@
         <table>
 
         </table>
+        <tr><td># of layers</td><td>{analyzedLayers.length} </td></tr>
         <tr><td>total time</td><td>{Math.round(time/60)}min</td></tr>
         <tr><td>total extruded</td><td>{Math.round(extruded)}mm</td></tr>
         <tr><td>total volume</td><td>{Math.round(volume)}mm^3</td></tr>
+        <tr><td>min extr speed</td><td>{minExtrusionSpeed.toFixed(2)} </td></tr>
+        <tr><td>max extr speed</td><td>{maxExtrusionSpeed.toFixed(2)} </td></tr>
         <tr><td>min flow rate</td><td>{minFlow.toFixed(2)} </td></tr>
         <tr><td>max flow rate</td><td>{maxFlow.toFixed(2)} </td></tr>
-        <tr><td># of layers</td><td>{analyzedLayers.length} </td></tr>
         {/if}
       </div>
       {/if}
@@ -281,13 +289,13 @@
       <canvas bind:this={canvasElement}></canvas>
 
     </div>
-    <div>filament diameter <select bind:value={filamentDia}> 
-        <option value="1.75">1.75mm</option>
-        <option value="2.85">2.85mm</option>
-      </select>
-    </div>
-
+    
     {#if analyzedLayers.length}
+      <div>set filament diameter: <select bind:value={filamentDia}> 
+          <option value="1.75">1.75mm</option>
+          <option value="2.85">2.85mm</option>
+        </select>
+      </div>
       <table>
         <tr>
           <th>z</th>
@@ -316,24 +324,50 @@
     <h2>Target flow & temps</h2>
     <div class="column-wrapper">
       <div class="column">
-        <label for="minFlow">min flow</label>
-        <output>{minFlow.toFixed(2)}</output>
+        <label for="minFlow">min extrusion speed</label>
+        <output>{minExtrusionSpeed.toFixed(2)} mm/s</output>
+
+        <label for="minFlow">min vol. flow</label>
+        <output>{minFlow.toFixed(2)} mm3/s</output>
+
         <label for="minTemp">min temp</label><input type="number" name="minTemp" bind:value={minTemp} />
       </div>
 
       <div class="column">
-        <label for="maxFlow">max flow</label>
-        <output>{maxFlow.toFixed(2)}</output>
+        <label for="maxFlow">max extrusion speed</label>
+        <output>{maxExtrusionSpeed.toFixed(2)} mm/s</output>
+
+        <label for="maxFlow">max vol. flow</label>
+        <output>{maxFlow.toFixed(2)} mm3/s</output>
+
         <label for="maxTemp">max temp</label><input type="number" name="maxTemp" bind:value={maxTemp} />
       </div>
     </div>
-    <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} />
+    <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} min="1" />
 
-    <h3>Temp changes ({tempChanges.length})</h3>
-    <button on:click={saveTargetFile}>save file</button>
-    {#each tempChanges as change}
-      <div> {change.layerNumber} z={change.layer.z} #{change.layer.lineNumber} {change.temp}C <pre><code>M104 S{change.temp}</code></pre> </div>
-    {/each}
+    {#if tempChanges.length}
+      <h3>Temp changes ({tempChanges.length})</h3>
+      <p>The following temp changes will be injected into the gcode at the given lines.</p>
+      <p><button on:click={saveTargetFile}>save updated file ↓</button></p>
+      <table>
+        <tr>
+          <th>layer</th>
+          <th>z</th>
+          <th>line</th>
+          <th>temp</th>
+          <th>gcode</th>
+        </tr>
+        {#each tempChanges as change}
+        <tr>
+          <td>{change.layerNumber}</td>
+          <td>{change.layer.z}</td>
+          <td>{change.layer.lineNumber}</td>
+          <td>{change.temp}°C</td>
+          <td><pre><code>M104 S{change.temp}</code></pre></td>
+        </tr>
+        {/each}
+      </table>
+    {/if}
   </section>
 </div>
 </main>
