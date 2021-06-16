@@ -3,8 +3,7 @@
 	import * as GCodePreview from "gcode-preview";
   import * as FileSaver from 'file-saver';
 
-
-  let file = {};
+  let file;
   let showDropZone = true;
   let canvasElement;
   let filamentDia = 1.75;
@@ -62,9 +61,9 @@
 
     file = files.accepted[0];
     const gcode = await file.text();
+    showDropZone = false;
     
     handleGCode(gcode);
-    showDropZone = false;
 	}
 
   function handleGCode(gcode) {
@@ -250,30 +249,43 @@
   <div class="wrapper">
   <section> 
     <h2>Preview</h2>
-    {#if showDropZone}
-      <Dropzone   on:drop={handleFilesSelect}>
-        <button>Choose images to upload</button>
 
-        <p>or</p>
-        <p>Drag and drop them here</p>
-      </Dropzone>
+    <div class="preview-wrapper">
+      {#if showDropZone}
+        <Dropzone   on:drop={handleFilesSelect}>
+          <button>Choose images to upload</button>
 
-    {/if}
+          <p>or</p>
+          <p>Drag and drop them here</p>
+        </Dropzone>
+      {/if}
 
-    <canvas bind:this={canvasElement}></canvas>
-    <div>{file.name}</div>
+      {#if file}
+      
+      <div class="summary">
+        <h4>{file.name}</h4>
+        {#if analyzedLayers.length}
+        <table>
+
+        </table>
+        <tr><td>total time</td><td>{Math.round(time/60)}min</td></tr>
+        <tr><td>total extruded</td><td>{Math.round(extruded)}mm</td></tr>
+        <tr><td>total volume</td><td>{Math.round(volume)}mm^3</td></tr>
+        <tr><td>min flow rate</td><td>{minFlow.toFixed(2)} </td></tr>
+        <tr><td>max flow rate</td><td>{maxFlow.toFixed(2)} </td></tr>
+        <tr><td># of layers</td><td>{analyzedLayers.length} </td></tr>
+        {/if}
+      </div>
+      {/if}
+      
+      <canvas bind:this={canvasElement}></canvas>
+
+    </div>
     <div>filament diameter <select bind:value={filamentDia}> 
         <option value="1.75">1.75mm</option>
         <option value="2.85">2.85mm</option>
       </select>
     </div>
-    <div> total time:  {Math.round(time/60)}min</div>
-    <div> total extruded:  {Math.round(extruded)}mm</div>
-    <div> total volume:  {Math.round(volume)}mm^3</div>
-    <div> minimum flow rate {minFlow.toFixed(2)} </div>
-    <div> maximum flow rate {maxFlow.toFixed(2)} </div>
-    <div> # of layers {analyzedLayers.length} </div>
-
 
     {#if analyzedLayers.length}
       <table>
@@ -375,7 +387,19 @@
     color: #ff5900;
   }
 
+  .preview-wrapper {
+    display: inline-block;
+  }
   canvas:focus {
     outline: none;
+  }
+
+  .summary {
+    position: absolute;
+    text-align: left;
+    color: yellow;
+    background-color: rgba(0,0,0,0.5);
+    padding: 5px;
+    font-size: 90%;
   }
 </style>
