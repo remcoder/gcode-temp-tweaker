@@ -361,4 +361,8 @@
   output {
     color: #ff5900;
   }
+
+  canvas:focus {
+    outline: none;
+  }
 </style>
