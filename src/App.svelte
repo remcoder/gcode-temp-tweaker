@@ -274,18 +274,31 @@
     <div> maximum flow rate {maxFlow.toFixed(2)} </div>
     <div> # of layers {analyzedLayers.length} </div>
 
-    <ol>
-      {#each analyzedLayers as layer}
-        <li>
-          z={layer.z}
-          #{layer.lineNumber}
-          {Math.round(layer.totalE)}mm 
-          {Math.round(layer.totalT)}s 
-          {layer.flow.toFixed(2)}mm/s 
-          {layer.vol.toFixed(3) }mm^3/s  
-        </li>
-      {/each} 
-    </ol>
+
+    {#if analyzedLayers.length}
+      <table>
+        <tr>
+          <th>z</th>
+          <th>layer</th>
+          <th>line</th>
+          <th>extrusion</th>
+          <th>time</th>
+          <th>extrusion speed</th>
+          <th>vol. flow rate</th>
+        </tr>
+        {#each analyzedLayers as layer, index}
+          <tr>
+            <td>{layer.z}</td>
+            <td>{index +1}</td>
+            <td>{layer.lineNumber}</td>
+            <td>{Math.round(layer.totalE)}mm</td>
+            <td>{Math.round(layer.totalT)}s</td>
+            <td>{layer.flow.toFixed(2)}mm/s</td>
+            <td>{layer.vol.toFixed(3) }mm^3/s</td>
+          </tr>
+        {/each} 
+      </table>
+    {/if}
   </section>
   <section>
     <h2>Target flow & temps</h2>
