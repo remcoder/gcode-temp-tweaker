@@ -3,7 +3,6 @@
 	import * as GCodePreview from "gcode-preview";
   import * as FileSaver from 'file-saver';
 
-	export let name;
 
   let file = {};
   let showDropZone = true;
