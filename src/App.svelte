@@ -27,7 +27,7 @@
   let maxFlow = 0;
   let minTemp = 200;
   let maxTemp = 230;
-  let tempInc = 1;
+  let tempInc = 5;
   // let flowVsTemp = [];
   let gcodePreview;
   let tempChanges = [];
