@@ -298,8 +298,8 @@
       </div>
       <table>
         <tr>
-          <th>z</th>
           <th>layer</th>
+          <th>z</th>
           <th>line</th>
           <th>extrusion</th>
           <th>time</th>
@@ -308,8 +308,8 @@
         </tr>
         {#each analyzedLayers as layer, index}
           <tr>
-            <td>{layer.z}</td>
             <td>{index +1}</td>
+            <td>{layer.z}</td>
             <td>{layer.lineNumber}</td>
             <td>{Math.round(layer.totalE)}mm</td>
             <td>{Math.round(layer.totalT)}s</td>
