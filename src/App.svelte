@@ -254,7 +254,7 @@
 	
   <div class="wrapper">
   <section> 
-    <h2>Preview</h2>
+    <h2>1. Specify gcode file</h2>
 
     <div class="preview-wrapper">
       {#if showDropZone}
@@ -321,40 +321,38 @@
     {/if}
   </section>
   <section>
-    <h2>Target flow & temps</h2>
-    <div class="column-wrapper">
-      <div class="column">
-        <label for="minFlow">min extrusion speed</label>
-        <output>{minExtrusionSpeed.toFixed(2)} mm/s</output>
-
-        <label for="minFlow">min vol. flow</label>
-        <output>{minFlow.toFixed(2)} mm3/s</output>
-
-        <label for="minTemp">min temp</label><input type="number" name="minTemp" bind:value={minTemp} />
-      </div>
-
-      <div class="column">
-        <label for="maxFlow">max extrusion speed</label>
-        <output>{maxExtrusionSpeed.toFixed(2)} mm/s</output>
-
-        <label for="maxFlow">max vol. flow</label>
-        <output>{maxFlow.toFixed(2)} mm3/s</output>
-
-        <label for="maxTemp">max temp</label><input type="number" name="maxTemp" bind:value={maxTemp} />
-      </div>
-    </div>
+    <h2>2. Set flow & temps</h2>
+    <table>
+      <tr><th></th><th>min</th><th>max</th></tr>
+      <tr>
+        <th><label for="minFlow">extr speed (mm/s)</label></th>
+        <td><output>{minExtrusionSpeed.toFixed(2)}</output></td>
+        <td><output>{maxExtrusionSpeed.toFixed(2)}</output></td>
+      </tr>
+      <tr>
+        <th><label for="minFlow">vol. flow (mm3/s)</label></th>
+        <td><output>{minFlow.toFixed(2)}</output></td>
+        <td><output>{maxFlow.toFixed(2)}</output></td>
+      </tr>
+      <tr>
+        <th><label for="minTemp">temp (C)</label></th>
+        <td><input type="number" name="minTemp" bind:value={minTemp} /></td>
+        <td><input type="number" name="maxTemp" bind:value={maxTemp} /></td>
+      </tr>
+    </table>
+   
     <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} min="1" />
 
     {#if tempChanges.length}
-      <h3>Temp changes ({tempChanges.length})</h3>
-      <p>The following temp changes will be injected into the gcode at the given lines.</p>
-      <p><button on:click={saveTargetFile}>save updated file ↓</button></p>
+      <h2>3. Save updated gcode</h2>
+      <p><button on:click={saveTargetFile}>download file ↓</button></p>
+      <p>The following {tempChanges.length} temp changes will be injected into the gcode at the given lines.</p>
       <table>
         <tr>
           <th>layer</th>
           <th>z</th>
           <th>line</th>
-          <th>temp</th>
+          <th>temp (C)</th>
           <th>gcode</th>
         </tr>
         {#each tempChanges as change}
@@ -362,7 +360,7 @@
           <td>{change.layerNumber}</td>
           <td>{change.layer.z}</td>
           <td>{change.layer.lineNumber}</td>
-          <td>{change.temp}°C</td>
+          <td>{change.temp}°</td>
           <td><pre><code>M104 S{change.temp}</code></pre></td>
         </tr>
         {/each}
@@ -374,7 +372,7 @@
 
 <style>
 	main {
-		text-align: center;
+		text-align: left;
 		/* padding: 1em; */
 		max-width: 240px;
 		margin: 0 auto;
@@ -385,26 +383,22 @@
 		text-transform: uppercase;
 		font-size: 4em;
 		font-weight: 200;
+    margin: 0;
 	}
 
   .wrapper {
     display: flex;
-    background-color: rgba(0,0,0,0.5);
-    color: white;
+    xbackground-color: rgba(0,0,0,0.5);
+    color: #d2d2d2;
     font-size: 110%;;
   }
 
   .wrapper section {
     width: 50vw;
   }
-
-  .column-wrapper {
-    display: flex;
-    justify-content: space-around;
-  }
-
   pre {
     display: inline-block;
+    margin: 0;
   }
 
 	@media (min-width: 640px) {
@@ -436,4 +430,9 @@
     padding: 5px;
     font-size: 90%;
   }
+
+button {
+  color: #fff;
+  background-color: #ff5900;
+}
 </style>
