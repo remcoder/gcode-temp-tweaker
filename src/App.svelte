@@ -7,7 +7,7 @@
   let showDropZone = true;
   let canvasElement;
   let filamentDia = 1.75;
-  let filamentRadius, filamentCrossSection;
+  let filamentRadius, filamentCrossSection = 1;
   let showAllLayers = false;
   
 	let files = {
@@ -256,12 +256,12 @@
 <main>
 	<h1>GCode Temp Tweaker</h1>
 	
-  <div class="wrapper">
+  <div class="columns">
   <section> 
     <h2>1. Specify gcode file</h2>
 
     <div class="preview-wrapper">
-      {#if showDropZone}
+      {#if !file}
         <Dropzone   on:drop={handleFilesSelect}>
           <button>Choose images to upload</button>
 
@@ -272,35 +272,71 @@
 
       {#if file}
       
-      <div class="summary">
-        <h4>{file.name}</h4>
-        {#if analyzedLayers.length}
-        <table>
+        <div class="summary">
+          <h4>{file.name}</h4>
+          {#if analyzedLayers.length}
+          <table>
 
-        </table>
-        <tr><td># of layers</td><td>{analyzedLayers.length} </td></tr>
-        <tr><td>total time</td><td>{Math.round(time/60)}min</td></tr>
-        <tr><td>total extruded</td><td>{Math.round(extruded)}mm</td></tr>
-        <tr><td>total volume</td><td>{Math.round(volume)}mm^3</td></tr>
-        <tr><td>min extr speed</td><td>{minExtrusionSpeed.toFixed(2)} </td></tr>
-        <tr><td>max extr speed</td><td>{maxExtrusionSpeed.toFixed(2)} </td></tr>
-        <tr><td>min flow rate</td><td>{minFlow.toFixed(2)} </td></tr>
-        <tr><td>max flow rate</td><td>{maxFlow.toFixed(2)} </td></tr>
-        {/if}
-      </div>
+          </table>
+          <tr><td># of layers</td><td>{analyzedLayers.length} </td></tr>
+          <tr><td>total time</td><td>{Math.round(time/60)}min</td></tr>
+          <tr><td>total extruded</td><td>{Math.round(extruded)}mm</td></tr>
+          <tr><td>total volume</td><td>{Math.round(volume)}mm^3</td></tr>
+          <tr><td>min extr speed</td><td>{minExtrusionSpeed.toFixed(2)} </td></tr>
+          <tr><td>max extr speed</td><td>{maxExtrusionSpeed.toFixed(2)} </td></tr>
+          <tr><td>min flow rate</td><td>{minFlow.toFixed(2)} </td></tr>
+          <tr><td>max flow rate</td><td>{maxFlow.toFixed(2)} </td></tr>
+          {/if}
+        </div>
       {/if}
       
-      <canvas bind:this={canvasElement}></canvas>
+      <canvas hidden={!file} bind:this={canvasElement}></canvas>
 
     </div>
-    
-    {#if analyzedLayers.length}
-      <div>set filament diameter: <select bind:value={filamentDia}> 
-          <option value="1.75">1.75mm</option>
-          <option value="2.85">2.85mm</option>
-        </select>
-      </div>
 
+    <section>
+      <h2>2. Set temp & flow rate</h2>
+      <table>
+        <tr><th></th><th>min</th><th>max</th></tr>
+        <tr>
+          <th><label for="minFlow">extr speed (mm/s)</label></th>
+          <td><output>{minExtrusionSpeed.toFixed(2)}</output></td>
+          <td><output>{maxExtrusionSpeed.toFixed(2)}</output></td>
+        </tr>
+        <tr>
+          <th><label for="minFlow">vol. flow (mm3/s)</label></th>
+          <td><output>{minFlow.toFixed(2)}</output></td>
+          <td><output>{maxFlow.toFixed(2)}</output></td>
+        </tr>
+        <tr>
+          <th><label for="minTemp">temp (C)</label></th>
+          <td><input type="number" name="minTemp" bind:value={minTemp} /></td>
+          <td><input type="number" name="maxTemp" bind:value={maxTemp} /></td>
+        </tr>
+        <tr>
+          <th><label for="tempInc">temp step size</label></th>
+          <td><input type="number" name="tempInc" bind:value={tempInc} min="1" /></td>
+        </tr>
+        <tr>
+          <th><label for="filemantDia">filament diameter</label></th>
+          <td>
+            <select name="filamentDia" bind:value={filamentDia}> 
+              <option value="1.75">1.75mm</option>
+              <option value="2.85">2.85mm</option>
+            </select>
+        </td>
+        </tr>
+      </table>
+    </section>
+  </section>
+ 
+  <section>
+    {#if analyzedLayers.length}
+      <h2>3. Download new file</h2>
+      <p>The resulting file contains newly inserted temperature commands (M104). example:</p>
+      <pre><code>M104 S215</code></pre>
+      <button disabled={!Object.keys(tempChanges).length} on:click={saveTargetFile}>download file ↓</button>
+      <h2>Temp changes</h2>
       <div>
         show all layers <input type="checkbox" bind:checked={showAllLayers} />
       </div>
@@ -308,13 +344,13 @@
       <table>
         <tr>
           <th>layer</th>
-          <th>z</th>
+          <th>z (mm)</th>
           <th>line</th>
-          <th>extrusion</th>
-          <th>time</th>
-          <th>extrusion speed</th>
-          <th>vol. flow rate</th>
-          <th>temp change</th>
+          <th>extrusion (mm)</th>
+          <th>time (s)</th>
+          <th>extr speed (mm/s)</th>
+          <th>flow rate (mm^3/s)</th>
+          <th>temp (C)</th>
         </tr>
         {#each analyzedLayers as layer, index}
           {#if tempChanges[index] || showAllLayers}
@@ -322,10 +358,10 @@
               <td>{index +1}</td>
               <td>{layer.z}</td>
               <td>{layer.lineNumber}</td>
-              <td>{Math.round(layer.totalE)}mm</td>
-              <td>{Math.round(layer.totalT)}s</td>
-              <td>{layer.flow.toFixed(2)}mm/s</td>
-              <td>{layer.vol.toFixed(3) }mm^3/s</td>
+              <td>{Math.round(layer.totalE)}</td>
+              <td>{Math.round(layer.totalT)}</td>
+              <td>{layer.flow.toFixed(2)}</td>
+              <td>{layer.vol.toFixed(3) }</td>
               <td class="primary">{tempChanges[index] ? tempChanges[index].temp : '' }</td>
             </tr>
           {/if}
@@ -333,40 +369,18 @@
       </table>
     {/if}
   </section>
-  <section>
-    <h2>2. Set flow & temps</h2>
-    <table>
-      <tr><th></th><th>min</th><th>max</th></tr>
-      <tr>
-        <th><label for="minFlow">extr speed (mm/s)</label></th>
-        <td><output>{minExtrusionSpeed.toFixed(2)}</output></td>
-        <td><output>{maxExtrusionSpeed.toFixed(2)}</output></td>
-      </tr>
-      <tr>
-        <th><label for="minFlow">vol. flow (mm3/s)</label></th>
-        <td><output>{minFlow.toFixed(2)}</output></td>
-        <td><output>{maxFlow.toFixed(2)}</output></td>
-      </tr>
-      <tr>
-        <th><label for="minTemp">temp (C)</label></th>
-        <td><input type="number" name="minTemp" bind:value={minTemp} /></td>
-        <td><input type="number" name="maxTemp" bind:value={maxTemp} /></td>
-      </tr>
-    </table>
-   
-    <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} min="1" />
-    <button on:click={saveTargetFile}>download file ↓</button>
 
-  </section>
+  
+
+  
 </div>
 </main>
 
 <style>
 	main {
 		text-align: left;
-		/* padding: 1em; */
-		max-width: 240px;
-		margin: 0 auto;
+    color: #d2d2d2;
+    font-size: 110%;;
 	}
 
 	h1 {
@@ -377,33 +391,27 @@
     margin: 0;
 	}
 
-  .wrapper {
+  h2 {
+    color: #ff5900;
+    text-transform: uppercase;
+    font-weight: 200;
+  }
+  section {
+    margin: 5px;
+  }
+  .columns {
     display: flex;
-    xbackground-color: rgba(0,0,0,0.5);
-    color: #d2d2d2;
-    font-size: 110%;;
   }
-
-  .wrapper section {
-    width: 50vw;
-  }
-  pre {
-    display: inline-block;
-    margin: 0;
-  }
-
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
-	}
-
   input[type=number] {
     width: 100px;
   }
 
   output {
     color: #ff5900;
+  }
+  pre {
+    padding: 10px;
+    background: #4c4c4c;
   }
 
   .preview-wrapper {
@@ -414,6 +422,7 @@
   }
 
   .summary {
+    display: none;
     position: absolute;
     text-align: left;
     color: yellow;
@@ -430,8 +439,11 @@
     color: grey;
   }
 
-button {
-  color: #fff;
-  background-color: #ff5900;
-}
+  button {
+    color: #fff;
+    background-color: #ff5900;
+  }
+  [disabled] {
+    opacity: 0.5;
+  }
 </style>
