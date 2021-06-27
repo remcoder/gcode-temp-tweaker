@@ -208,7 +208,7 @@
 
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
-      const desiredTemp = roundTo(interpolateTemp(layer.flow, minFlow, maxFlow, minTemp, maxTemp), tempInc);
+      const desiredTemp = roundTo(interpolateTemp(layer.vol, minFlow, maxFlow, minTemp, maxTemp), tempInc);
       
       if (desiredTemp != prevTemp) {
         changes.push({
