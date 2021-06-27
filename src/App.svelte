@@ -8,6 +8,7 @@
   let canvasElement;
   let filamentDia = 1.75;
   let filamentRadius, filamentCrossSection;
+  let showAllLayers = false;
   
 	let files = {
 	  accepted: [],
@@ -203,7 +204,7 @@
   function generateTempChanges(layers, minFlow, maxFlow, minTemp, maxTemp, tempInc) {
     console.debug('generateTempChanges');
     // NOTE: assumption: first layer == slowest == minTemp
-    const changes = [];
+    const changes = {};
     let prevTemp = minTemp;
 
     for (let i = 0; i < layers.length; i++) {
@@ -211,11 +212,12 @@
       const desiredTemp = roundTo(interpolateTemp(layer.vol, minFlow, maxFlow, minTemp, maxTemp), tempInc);
       
       if (desiredTemp != prevTemp) {
-        changes.push({
+        const change = {
           layerNumber: i+1,
           layer,
           temp: desiredTemp
-        });
+        };
+        changes[i] = change;
       }
 
       prevTemp = desiredTemp;
@@ -238,10 +240,10 @@
 
   function saveTargetFile() {
     const lines = gcodePreview.parser.lines.slice();
-    
-    tempChanges.reverse();
-    tempChanges.forEach(ch=> lines.splice(ch.layer.lineNumber,0, `M104 S${ch.temp} ; injected by GCode Temp Tweaker` ) );
-    tempChanges.reverse();
+    const layersWithChanges = Object.keys(tempChanges);
+
+    layersWithChanges.reverse();
+    layersWithChanges.forEach(index => lines.splice(tempChanges[index].layer.lineNumber,0, `M104 S${tempChanges[index].temp} ; injected by GCode Temp Tweaker` ) );
 
     const gcode = lines.join('\n');
 
@@ -298,6 +300,11 @@
           <option value="2.85">2.85mm</option>
         </select>
       </div>
+
+      <div>
+        show all layers <input type="checkbox" bind:checked={showAllLayers} />
+      </div>
+
       <table>
         <tr>
           <th>layer</th>
@@ -307,17 +314,21 @@
           <th>time</th>
           <th>extrusion speed</th>
           <th>vol. flow rate</th>
+          <th>temp change</th>
         </tr>
         {#each analyzedLayers as layer, index}
-          <tr>
-            <td>{index +1}</td>
-            <td>{layer.z}</td>
-            <td>{layer.lineNumber}</td>
-            <td>{Math.round(layer.totalE)}mm</td>
-            <td>{Math.round(layer.totalT)}s</td>
-            <td>{layer.flow.toFixed(2)}mm/s</td>
-            <td>{layer.vol.toFixed(3) }mm^3/s</td>
-          </tr>
+          {#if tempChanges[index] || showAllLayers}
+            <tr class={!tempChanges[index] ? 'subtle' : ''}>
+              <td>{index +1}</td>
+              <td>{layer.z}</td>
+              <td>{layer.lineNumber}</td>
+              <td>{Math.round(layer.totalE)}mm</td>
+              <td>{Math.round(layer.totalT)}s</td>
+              <td>{layer.flow.toFixed(2)}mm/s</td>
+              <td>{layer.vol.toFixed(3) }mm^3/s</td>
+              <td class="primary">{tempChanges[index] ? tempChanges[index].temp : '' }</td>
+            </tr>
+          {/if}
         {/each} 
       </table>
     {/if}
@@ -344,30 +355,8 @@
     </table>
    
     <label for="tempInc">temp step size</label><input type="number" name="tempInc" bind:value={tempInc} min="1" />
+    <button on:click={saveTargetFile}>download file ↓</button>
 
-    {#if tempChanges.length}
-      <h2>3. Save updated gcode</h2>
-      <p><button on:click={saveTargetFile}>download file ↓</button></p>
-      <p>The following {tempChanges.length} temp changes will be injected into the gcode at the given lines.</p>
-      <table>
-        <tr>
-          <th>layer</th>
-          <th>z</th>
-          <th>line</th>
-          <th>temp (C)</th>
-          <th>gcode</th>
-        </tr>
-        {#each tempChanges as change}
-        <tr>
-          <td>{change.layerNumber}</td>
-          <td>{change.layer.z}</td>
-          <td>{change.layer.lineNumber}</td>
-          <td>{change.temp}°</td>
-          <td><pre><code>M104 S{change.temp}</code></pre></td>
-        </tr>
-        {/each}
-      </table>
-    {/if}
   </section>
 </div>
 </main>
@@ -431,6 +420,14 @@
     background-color: rgba(0,0,0,0.5);
     padding: 5px;
     font-size: 90%;
+  }
+
+  .primary {
+    color: #ff5900;
+  }
+
+  .subtle {
+    color: grey;
   }
 
 button {
