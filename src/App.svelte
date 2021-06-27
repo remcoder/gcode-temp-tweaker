@@ -38,6 +38,8 @@
       time,
       extruded,
       volume,
+      minExtrusionSpeed,
+      maxExtrusionSpeed,
       minFlow,
       maxFlow } = aggregateLayerStats(analyzedLayers));
   $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc);
@@ -178,15 +180,15 @@
   function aggregateLayerStats(layers) {
     console.debug('aggregateLayerStats');
 
-    time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
-    extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
-    volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
+    const time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
+    const extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
+    const volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
 
-    minExtrusionSpeed = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
-    maxExtrusionSpeed = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
+    const minExtrusionSpeed = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
+    const maxExtrusionSpeed = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
 
-    minFlow = minExtrusionSpeed * filamentCrossSection;
-    maxFlow = maxExtrusionSpeed * filamentCrossSection;
+    const minFlow = minExtrusionSpeed * filamentCrossSection;
+    const maxFlow = maxExtrusionSpeed * filamentCrossSection;
     return {
       time,
       extruded,
