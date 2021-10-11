@@ -207,18 +207,20 @@
     };
   }
 
-  function aggregateLayerStats(layers) {
-    console.debug('aggregateLayerStats');
+  function aggregateLayerStats(layers, skipFirstLayers, skipLastLayers) {
+    console.time('aggregateLayerStats');
 
-    const time = layers.reduce((prev, cur) => prev + cur.totalT, 0);
-    const extruded = layers.reduce((prev, cur) => prev + cur.totalE, 0);
-    const volume = layers.reduce((prev, cur) => prev + cur.totalE*filamentCrossSection, 0);
+    const filteredLayers = layers.slice(skipFirstLayers, layers.length - skipLastLayers );
+    const time = filteredLayers.reduce((prev, cur) => prev + cur.totalT, 0);
+    const extruded = filteredLayers.reduce((prev, cur) => prev + cur.totalE, 0);
+    const volume = extruded * filamentCrossSection;
 
-    const minExtrusionSpeed = layers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
-    const maxExtrusionSpeed = layers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
+    const minExtrusionSpeed = filteredLayers.reduce((prev, cur)=> Math.min(prev , cur.flow), Infinity );
+    const maxExtrusionSpeed = filteredLayers.reduce((prev, cur)=> Math.max(prev , cur.flow), -Infinity );
 
     const minFlow = minExtrusionSpeed * filamentCrossSection;
     const maxFlow = maxExtrusionSpeed * filamentCrossSection;
+    console.timeEnd('aggregateLayerStats');
     return {
       time,
       extruded,
