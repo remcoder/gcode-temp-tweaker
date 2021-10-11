@@ -45,9 +45,9 @@
       minExtrusionSpeed,
       maxExtrusionSpeed,
       minFlow,
-      maxFlow } = aggregateLayerStats(analyzedLayers));
+      maxFlow } = aggregateLayerStats(analyzedLayers, skipFirstLayers, skipLastLayers));
   $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc, skipFirstLayers, skipLastLayers);
-
+  
   // init()
 
   onMount(() => {
@@ -282,6 +282,11 @@
     FileSaver.saveAs(blob, "hello world.gcode");
   }
 
+  function isLayerExcluded(layerIndex) {
+    // console.log(layerIndex, skipFirstLayers, layerIndex < skipFirstLayers);
+    return layerIndex < skipFirstLayers || layerIndex > (analyzedLayers.length -1 - skipLastLayers);
+  }
+
 </script>	
 
 <main>
@@ -393,7 +398,8 @@
         </tr>
         {#each analyzedLayers as layer, index}
           {#if tempChanges[index] || showAllLayers}
-            <tr class={!tempChanges[index] ? 'subtle' : ''}>
+          
+            <tr class:subtle={!tempChanges[index]} class:excludedLayer={isLayerExcluded(index, skipFirstLayers, skipLastLayers)} >
               <td>{index +1}</td>
               <td>{layer.z}</td>
               <td>{layer.lineNumber}</td>
@@ -483,6 +489,10 @@
 
   .subtle {
     color: grey;
+  }
+
+  .excludedLayer {
+    text-decoration: line-through;
   }
 
   button {
