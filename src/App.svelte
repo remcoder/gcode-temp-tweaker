@@ -33,6 +33,8 @@
   let gcodePreview;
   let tempChanges = [];
   let analyzedLayers = [];
+  let skipFirstLayers = 0;
+  let skipLastLayers = 0;
 
   $: analyzedLayers  = analyzeGCode(gcodePreview, filamentDia);
   $: ({
@@ -43,7 +45,7 @@
       maxExtrusionSpeed,
       minFlow,
       maxFlow } = aggregateLayerStats(analyzedLayers));
-  $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc);
+  $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc, skipFirstLayers, skipLastLayers);
 
   //init()
 
@@ -201,13 +203,15 @@
     };
   }
 
-  function generateTempChanges(layers, minFlow, maxFlow, minTemp, maxTemp, tempInc) {
-    console.debug('generateTempChanges');
+  function generateTempChanges(layers, minFlow, maxFlow, minTemp, maxTemp, tempInc, skipFirstLayers, skipLastLayers) {
+    console.debug('generateTempChanges', minFlow, maxFlow, minTemp, maxTemp, tempInc, skipFirstLayers, skipLastLayers);
     // NOTE: assumption: first layer == slowest == minTemp
     const changes = {};
     let prevTemp = minTemp;
 
     for (let i = 0; i < layers.length; i++) {
+      if (i < skipFirstLayers) continue;
+      if (i >= (layers.length - 1 - skipLastLayers) ) break;
       const layer = layers[i];
       const desiredTemp = roundTo(interpolateTemp(layer.vol, minFlow, maxFlow, minTemp, maxTemp), tempInc);
       
@@ -324,7 +328,15 @@
               <option value="1.75">1.75mm</option>
               <option value="2.85">2.85mm</option>
             </select>
-        </td>
+          </td>
+        </tr>
+        <tr>
+          <th><label for=skipFirstLayers>ignore first X layers</label></th>
+          <td><input type=number bind:value={skipFirstLayers} name=skipFirstLayers min=0 /></td>
+        </tr>
+        <tr>
+          <th><label for=skipLastLayers>ignore last X layers</label></th>
+          <td><input type=number bind:value={skipLastLayers} name=skipLastLayers min=0 /></td>
         </tr>
       </table>
     </section>
