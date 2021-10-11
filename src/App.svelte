@@ -1,5 +1,6 @@
 <script>
-	import Dropzone from "svelte-file-dropzone";
+  import { onMount } from 'svelte';
+	// import Dropzone from "svelte-file-dropzone";
 	import * as GCodePreview from "gcode-preview";
   import * as FileSaver from 'file-saver';
 
@@ -47,7 +48,33 @@
       maxFlow } = aggregateLayerStats(analyzedLayers));
   $: tempChanges = generateTempChanges(analyzedLayers, minFlow, maxFlow, minTemp, maxTemp, tempInc, skipFirstLayers, skipLastLayers);
 
-  //init()
+  // init()
+
+  onMount(() => {
+    canvasElement.addEventListener('dragover', function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        evt.dataTransfer.dropEffect = 'copy';
+        // document.body.className = "dragging";
+    });
+
+    canvasElement.addEventListener('dragleave', function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        // document.body.className = "";
+    });
+
+    canvasElement.addEventListener('drop', function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        // document.body.className = "";
+        const reader = new FileReader();
+        reader.onload = function() {
+          handleGCode(reader.result);
+        };
+        reader.readAsText(evt.dataTransfer.files[0]);
+      });
+  });
 
   async function init() {
     const response = await fetch('double-cylinder.gcode');
@@ -262,17 +289,17 @@
 	
   <div class="columns">
   <section> 
-    <h2>1. Specify gcode file</h2>
+    <h2>1. Drag n drop gcode file</h2>
 
     <div class="preview-wrapper">
-      {#if !file}
-        <Dropzone   on:drop={handleFilesSelect}>
+      
+      <!-- {#if !file}
           <button>Choose images to upload</button>
 
           <p>or</p>
           <p>Drag and drop them here</p>
-        </Dropzone>
-      {/if}
+        
+      {/if} -->
 
       {#if file}
       
@@ -294,8 +321,8 @@
         </div>
       {/if}
       
-      <canvas hidden={!file} bind:this={canvasElement}></canvas>
-
+      <canvas width=400 height=300 bind:this={canvasElement}></canvas>
+      
     </div>
 
     <section>
@@ -428,6 +455,13 @@
 
   .preview-wrapper {
     display: inline-block;
+  }
+  
+  canvas {
+    border: 1px solid grey;
+    width: 600px;
+    height: 300px;
+    box-sizing: border-box;
   }
   canvas:focus {
     outline: none;
