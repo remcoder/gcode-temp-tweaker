@@ -9,7 +9,10 @@ Sometimes, layers are so small that they need to be printed more slowly so the l
  - notice the table that reports the temp changes that will be injected
  - download the resulting gcode!
 
-## Get started
+## Know issues
+ - the absolute extrusion speed are off (but the resulting temp changes, which are based on relative speed changes, are surely usable)
+
+## Running locally
 
 Install the dependencies...
 
