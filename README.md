@@ -1,5 +1,13 @@
-# svelte app
+# GCode temp tweaker
 
+Sometimes, layers are so small that they need to be printed more slowly so the layer has time to cool down. But slowing down the feedrate causes the filament to be cooked inide the nozzle. This tool will process the gcode, calculate the overall volumetric flow rate per layer and adjust the temp accordingy. This is achieved by injecting temp commands (M104) in to the gcode. 
+
+## How it works
+ - go to https://gcode-temp-tweaker.firebaseapp.com/
+ - drop a gcode file into the rectangular box
+ - set the minimum and maximum temp you want to vary between
+ - notice the table that reports the temp changes that will be injected
+ - download the resulting gcode!
 
 ## Get started
 
