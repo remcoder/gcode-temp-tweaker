@@ -5,9 +5,15 @@ Sometimes, layers are so small that they need to be printed more slowly so the l
 ## How it works
  - go to https://gcode-temp-tweaker.firebaseapp.com/
  - drop a gcode file into the rectangular box
+ <img width="612" alt="image" src="https://user-images.githubusercontent.com/461650/172624191-a7f24f72-d9a5-4b97-9f4a-d44515d9a692.png">
  - set the minimum and maximum temp you want to vary between
+<img width="385" alt="image" src="https://user-images.githubusercontent.com/461650/172624959-842126b1-8eb3-4b4e-afa5-375a260b4f0d.png">
+
  - notice the table that reports the temp changes that will be injected
+ <img width="579" alt="image" src="https://user-images.githubusercontent.com/461650/172625205-a571b3b8-7054-458b-9f69-968f9cc93a9d.png">
+
  - download the resulting gcode!
+
 
 ## Know issues
  - the absolute extrusion speed are off (but the resulting temp changes, which are based on relative speed changes, are surely usable)
