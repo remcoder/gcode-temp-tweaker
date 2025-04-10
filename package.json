@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "file-saver": "^2.0.5",
-    "firebase": "^9.1.2",
+    "firebase": "^9.23.0",
     "gcode-preview": "^2.6.1",
     "sirv-cli": "^1.0.0",
     "svelte-file-dropzone": "0.0.15"
